@@ -68,7 +68,7 @@ python -m http.server 8000
 
 Open your browser and go to:
 
-http://localhost:8000](https://kavihrx.github.io/SRM-CONNECT/
+https://kavihrx.github.io/SRM-CONNECT/
 
 Alternatively, use VS Code with the Live Server extension:
 
