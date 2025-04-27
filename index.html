@@ -1,0 +1,1118 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SRM CONNECT</title>
+  <script
+    src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"
+    crossorigin="anonymous"
+    onerror="document.getElementById('error-message').innerText = 'Failed to load React. Check your internet connection.'"
+  ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"
+    crossorigin="anonymous"
+    onerror="document.getElementById('error-message').innerText = 'Failed to load ReactDOM. Check your internet connection.'"
+  ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"
+    crossorigin="anonymous"
+    onerror="document.getElementById('error-message').innerText = 'Failed to load Babel. Check your internet connection.'"
+  ></script>
+  <script
+    src="https://cdn.tailwindcss.com"
+    onerror="document.getElementById('error-message').innerText = 'Failed to load Tailwind CSS. Check your internet connection.'"
+  ></script>
+  <style>
+    .hero-bg {
+      background-image: url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-blend-mode: overlay;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .card-hover {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    }
+    #loading, #error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    #loading {
+      font-size: 1.5rem;
+      color: #333;
+    }
+    #error-message {
+      font-size: 1.2rem;
+      color: red;
+      max-width: 80%;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading SRM CONNECT...</div>
+  <div id="error-message" style="display: none;"></div>
+  <div id="root" style="display: none;"></div>
+  <script type="text/babel">
+    // Hide loading indicator and show app when scripts load
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('root').style.display = 'block';
+
+    const { useState, useRef, StrictMode } = React;
+
+    // Expanded mock data
+    const initialData = {
+      interests: [
+        'Technology', 'Music', 'Sports', 'Art', 'Gaming', 'Photography', 'Literature', 
+        'Entrepreneurship', 'Dance', 'Science', 'Fashion', 'Cooking', 'Travel'
+      ],
+      groups: [
+        { id: 1, name: 'Tech Enthusiasts', interest: 'Technology', members: 120, description: 'For coders and tech lovers' },
+        { id: 2, name: 'AI Innovators', interest: 'Technology', members: 80, description: 'Explore AI and ML advancements' },
+        { id: 3, name: 'Cybersecurity Hub', interest: 'Technology', members: 65, description: 'Learn about digital security' },
+        { id: 4, name: 'Music Lovers', interest: 'Music', members: 85, description: 'Share your favorite tunes' },
+        { id: 5, name: 'SRM Symphony Club', interest: 'Music', members: 50, description: 'Join our campus band' },
+        { id: 6, name: 'Acoustic Vibes', interest: 'Music', members: 40, description: 'For acoustic music fans' },
+        { id: 7, name: 'Football Fanatics', interest: 'Sports', members: 95, description: 'Discuss matches and play!' },
+        { id: 8, name: 'Cricket Craze', interest: 'Sports', members: 70, description: 'For cricket enthusiasts' },
+        { id: 9, name: 'Badminton League', interest: 'Sports', members: 55, description: 'Smash your way to victory' },
+        { id: 10, name: 'Art Creators', interest: 'Art', members: 60, description: 'Showcase your artwork' },
+        { id: 11, name: 'Sketch Society', interest: 'Art', members: 45, description: 'For pencil and digital artists' },
+        { id: 12, name: 'Mural Makers', interest: 'Art', members: 35, description: 'Create campus murals' },
+        { id: 13, name: 'Gamers Guild', interest: 'Gaming', members: 110, description: 'Join epic gaming sessions' },
+        { id: 14, name: 'Esports Elite', interest: 'Gaming', members: 75, description: 'Compete in esports tournaments' },
+        { id: 15, name: 'Retro Gamers', interest: 'Gaming', members: 50, description: 'Relive classic games' },
+        { id: 16, name: 'Shutterbugs', interest: 'Photography', members: 45, description: 'Capture the moment' },
+        { id: 17, name: 'Wildlife Snaps', interest: 'Photography', members: 30, description: 'Focus on nature photography' },
+        { id: 18, name: 'Portrait Pros', interest: 'Photography', members: 25, description: 'Master portrait shots' },
+        { id: 19, name: 'Book Club', interest: 'Literature', members: 70, description: 'Discuss your favorite books' },
+        { id: 20, name: 'Poetry Circle', interest: 'Literature', members: 40, description: 'Share and write poetry' },
+        { id: 21, name: 'Lit Critics', interest: 'Literature', members: 35, description: 'Analyze classic literature' },
+        { id: 22, name: 'Startup Stars', interest: 'Entrepreneurship', members: 50, description: 'Build your dream venture' },
+        { id: 23, name: 'SRM Innovate', interest: 'Entrepreneurship', members: 60, description: 'Pitch startup ideas' },
+        { id: 24, name: 'Social Entrepreneurs', interest: 'Entrepreneurship', members: 45, description: 'Impact-driven ventures' },
+        { id: 25, name: 'Dance Dynamite', interest: 'Dance', members: 55, description: 'Learn and perform dance' },
+        { id: 26, name: 'Bollywood Beats', interest: 'Dance', members: 50, description: 'Master Bollywood choreography' },
+        { id: 27, name: 'Hip-Hop Crew', interest: 'Dance', members: 40, description: 'Groove to hip-hop' },
+        { id: 28, name: 'Science Squad', interest: 'Science', members: 65, description: 'Explore scientific discoveries' },
+        { id: 29, name: 'Physics Fanatics', interest: 'Science', members: 40, description: 'Dive into physics' },
+        { id: 30, name: 'Bio Pioneers', interest: 'Science', members: 50, description: 'Innovate in biology' },
+        { id: 31, name: 'Fashion Forward', interest: 'Fashion', members: 50, description: 'Create and showcase styles' },
+        { id: 32, name: 'Sustainable Fashion', interest: 'Fashion', members: 35, description: 'Eco-friendly designs' },
+        { id: 33, name: 'Street Style Collective', interest: 'Fashion', members: 30, description: 'Urban fashion trends' },
+        { id: 34, name: 'Culinary Kings', interest: 'Cooking', members: 45, description: 'Master the art of cooking' },
+        { id: 35, name: 'Baking Brigade', interest: 'Cooking', members: 40, description: 'Perfect your baking skills' },
+        { id: 36, name: 'Global Cuisine Club', interest: 'Cooking', members: 35, description: 'Explore world cuisines' },
+        { id: 37, name: 'Travel Trekkers', interest: 'Travel', members: 60, description: 'Plan and share travel adventures' },
+        { id: 38, name: 'Backpackers United', interest: 'Travel', members: 50, description: 'Budget travel tips' },
+        { id: 39, name: 'Cultural Explorers', interest: 'Travel', members: 45, description: 'Discover global cultures' },
+      ],
+      announcements: [
+        { id: 1, title: 'Prime Minister’s Visit to SRMIST', content: 'Honorable Prime Minister Shri Narendra Modi will visit SRM Institute of Science and Technology, Kattankulathur, on May 3, 2025, to inaugurate the new 5G Lab and address students.', date: '2025-04-27' },
+        { id: 2, title: 'Aaruush 2025 Announced', content: 'SRM’s annual tech fest, Aaruush 2025, is scheduled for September 10-13, 2025. Register now!', date: '2025-04-26' },
+        { id: 3, title: 'Semester Exams Schedule', content: 'End Term Examinations for May 2025 (Even Semester) will begin on May 15. Check the student portal for details.', date: '2025-04-25' },
+        { id: 4, title: 'SRM Innovation Grant', content: 'Applications open for SRM Innovation Grant 2025 for student startups. Deadline: June 1, 2025.', date: '2025-04-24' },
+        { id: 5, title: 'Campus Wi-Fi Upgrade', content: 'SRMIST is upgrading campus Wi-Fi to support LiFi 5G technology starting May 2025.', date: '2025-04-23' },
+        { id: 6, title: 'Anti-Ragging Campaign', content: 'SRMIST launches its annual anti-ragging campaign. Report any incidents to the Disciplinary Committee.', date: '2025-04-22' },
+        { id: 7, title: 'Milan 2025 Cultural Fest', content: 'Join us for Milan 2025, SRM’s cultural extravaganza, from October 5-8, 2025!', date: '2025-04-21' },
+      ],
+      events: [
+        { id: 1, title: 'Tech Hackathon', date: '2025-05-10', location: 'SRM Main Campus', description: 'Code your way to glory at SRM’s annual hackathon!' },
+        { id: 2, title: 'Music Fest', date: '2025-05-15', location: 'Open Amphitheatre', description: 'Live bands and DJs at SRM’s Music Fest!' },
+        { id: 3, title: 'Aaruush 2025 Tech Fest', date: '2025-09-10 to 2025-09-13', location: 'SRM Kattankulathur', description: 'National-level tech fest with 50+ events.' },
+        { id: 4, title: 'Career Fair 2025', date: '2025-06-20', location: 'TP Ganesan Auditorium', description: 'Meet top recruiters like Amazon, Microsoft, and TCS.' },
+        { id: 5, title: 'SRM Model United Nations', date: '2025-07-05', location: 'SRM Ramapuram', description: 'Debate global issues as world leaders.' },
+        { id: 6, title: 'Sports Day 2025', date: '2025-08-15', location: 'SRM Sports Complex', description: 'Compete in cricket, football, and more!' },
+      ],
+      opportunities: [
+        { id: 1, title: 'Internship at Tech Corp', description: 'Open for CSE students. Work on cutting-edge AI projects.', deadline: '2025-05-15' },
+        { id: 2, title: 'Art Exhibition Volunteer', description: 'Help organize SRM’s annual art show.', deadline: '2025-05-20' },
+        { id: 3, title: 'Research Assistant at SRM Innovation Lab', description: 'Assist in 5G and IoT research projects.', deadline: '2025-06-10' },
+        { id: 4, title: 'Google Summer Internship', description: 'Apply for Google’s 2025 summer internship program.', deadline: '2025-05-30' },
+        { id: 5, title: 'Social Impact Fellowship', description: 'Work on community development projects with SRM’s NSS.', deadline: '2025-06-15' },
+        { id: 6, title: 'Startup Incubation at SRMIIC', description: 'Get funding and mentorship for your startup idea.', deadline: '2025-07-01' },
+      ],
+      forumPosts: [
+        { 
+          id: 1, 
+          title: 'Best Programming Language for Beginners?', 
+          content: 'What do you think is the best programming language for beginners? I’m torn between Python and JavaScript. Python seems easier, but JS is everywhere on the web.', 
+          author: 'Aarav Sharma', 
+          date: '2025-04-27', 
+          comments: [
+            { id: 1, user: 'Priya Patel', content: 'Python is great for beginners! Its syntax is simple.', time: '12:30' },
+            { id: 2, user: 'Rohan Kumar', content: 'JS is more versatile for web development.', time: '13:00' },
+            { id: 3, user: 'Sneha Reddy', content: 'Try Python first, then move to JS for web projects.', time: '14:15' }
+          ]
+        },
+        { 
+          id: 2, 
+          title: 'Favorite Book Recommendations', 
+          content: 'Share your top reads! I loved "1984" by George Orwell. Looking for more dystopian novels or thought-provoking reads.', 
+          author: 'Ananya Singh', 
+          date: '2025-04-26', 
+          comments: [
+            { id: 1, user: 'Vikram Nair', content: 'Try "Dune" by Frank Herbert! It’s epic.', time: '14:00' },
+            { id: 2, user: 'Meera Joshi', content: 'I recommend "Brave New World" by Aldous Huxley.', time: '15:30' }
+          ]
+        },
+        { 
+          id: 3, 
+          title: 'Photography Tips for Low Light', 
+          content: 'How do you get better shots in low light? I struggle with noise and blurry images during evening campus events.', 
+          author: 'Karthik Menon', 
+          date: '2025-04-25', 
+          comments: [
+            { id: 1, user: 'Lakshmi Iyer', content: 'Use a tripod and increase ISO, but not too high.', time: '16:00' },
+            { id: 2, user: 'Arjun Desai', content: 'Try a prime lens with a wide aperture like f/1.8.', time: '17:45' }
+          ]
+        },
+        { 
+          id: 4, 
+          title: 'Preparing for Aaruush 2025', 
+          content: 'Aaruush 2025 is coming up! Any tips for first-time participants? What events should I prioritize?', 
+          author: 'Siddharth Rao', 
+          date: '2025-04-27', 
+          comments: [
+            { id: 1, user: 'Nisha Gupta', content: 'Don’t miss the hackathon and robotics events!', time: '09:00' },
+            { id: 2, user: 'Aditya Verma', content: 'Register early for workshops; they fill up fast.', time: '10:30' }
+          ]
+        },
+        { 
+          id: 5, 
+          title: 'Best Study Spots on Campus', 
+          content: 'Where do you guys study on campus? The library is great, but it’s crowded sometimes.', 
+          author: 'Divya Balaji', 
+          date: '2025-04-26', 
+          comments: [
+            { id: 1, user: 'Rahul Pillai', content: 'Try the CSE department lounge; it’s quiet.', time: '11:00' },
+            { id: 2, user: 'Shreya Kulkarni', content: 'The amphitheatre is nice for group study.', time: '12:45' }
+          ]
+        },
+        { 
+          id: 6, 
+          title: 'Tips for SRMJEEE Preparation', 
+          content: 'I’m preparing for SRMJEEE 2025. Any advice on study resources or time management?', 
+          author: 'Arnav Mehra', 
+          date: '2025-04-25', 
+          comments: [
+            { id: 1, user: 'Tanya Sharma', content: 'Focus on NCERT for basics and practice mock tests.', time: '13:00' },
+            { id: 2, user: 'Kiran Yadav', content: 'Time management is key. Solve past papers.', time: '14:20' }
+          ]
+        },
+        { 
+          id: 7, 
+          title: '5G Lab Research Opportunities', 
+          content: 'Excited about the new 5G Lab at SRM! Anyone know how to get involved in research projects there?', 
+          author: 'Rhea Kapoor', 
+          date: '2025-04-24', 
+          comments: [
+            { id: 1, user: 'Sameer Khan', content: 'Contact the CSE department for openings.', time: '15:00' },
+            { id: 2, user: 'Anjali Suresh', content: 'Check SRMIIC for research assistant roles.', time: '16:30' }
+          ]
+        },
+        { 
+          id: 8, 
+          title: 'Milan 2025 Auditions', 
+          content: 'When are the auditions for Milan 2025? I want to join the dance team!', 
+          author: 'Ishaan Malhotra', 
+          date: '2025-04-23', 
+          comments: [
+            { id: 1, user: 'Pooja Ranganathan', content: 'Auditions start in June. Check the student portal.', time: '17:00' },
+            { id: 2, user: 'Vivek Krishnan', content: 'Join the Dance Club for practice sessions!', time: '18:15' }
+          ]
+        },
+      ],
+      chats: [
+        { id: 1, groupId: 1, user: 'Aarav Sharma', message: 'Hey, anyone up for a coding session this weekend?', time: '10:30' },
+        { id: 2, groupId: 1, user: 'Priya Patel', message: 'I’m in! Let’s do a Python project.', time: '10:45' },
+        { id: 3, groupId: 1, user: 'Rohan Kumar', message: 'Count me in. Maybe a web app?', time: '11:00' },
+        { id: 4, groupId: 1, user: 'Sneha Reddy', message: 'I can help with frontend. React okay?', time: '11:15' },
+        { id: 5, groupId: 1, user: 'Vikram Nair', message: 'Let’s meet at the CSE lab on Saturday.', time: '11:30' },
+        { id: 6, groupId: 1, user: 'Meera Joshi', message: 'Anyone tried the new 5G Lab?', time: '12:00' },
+        { id: 7, groupId: 1, user: 'Karthik Menon', message: 'Not yet, but I’m applying for a project there!', time: '12:15' },
+        { id: 8, groupId: 4, user: 'Ananya Singh', message: 'Check out this new album by Arijit Singh!', time: '11:00' },
+        { id: 9, groupId: 4, user: 'Lakshmi Iyer', message: 'Loved it! His voice is amazing.', time: '11:10' },
+        { id: 10, groupId: 4, user: 'Arjun Desai', message: 'Anyone going to Music Fest next month?', time: '11:20' },
+        { id: 11, groupId: 4, user: 'Nisha Gupta', message: 'Yes! I got VIP passes.', time: '11:30' },
+        { id: 12, groupId: 4, user: 'Aditya Verma', message: 'Let’s jam at the amphitheatre this evening.', time: '11:45' },
+        { id: 13, groupId: 4, user: 'Rahul Pillai', message: 'Bring your guitar, Aditya!', time: '12:00' },
+        { id: 14, groupId: 7, user: 'Siddharth Rao', message: 'Practice session tomorrow at 6 PM?', time: '09:00' },
+        { id: 15, groupId: 7, user: 'Shreya Kulkarni', message: 'I’m there! Need a goalkeeper?', time: '09:15' },
+        { id: 16, groupId: 7, user: 'Tanya Sharma', message: 'Let’s work on our passing drills.', time: '09:30' },
+        { id: 17, groupId: 7, user: 'Kiran Yadav', message: 'Anyone watched the latest EPL match?', time: '09:45' },
+        { id: 18, groupId: 7, user: 'Sameer Khan', message: 'Yeah, Liverpool was on fire!', time: '10:00' },
+        { id: 19, groupId: 7, user: 'Anjali Suresh', message: 'Can we book the turf for Sunday?', time: '10:15' },
+        { id: 20, groupId: 10, user: 'Rhea Kapoor', message: 'Working on a mural for Aaruush. Ideas?', time: '14:00' },
+        { id: 21, groupId: 10, user: 'Pooja Ranganathan', message: 'Maybe a tech-themed design?', time: '14:15' },
+        { id: 22, groupId: 10, user: 'Vivek Krishnan', message: 'I can sketch some concepts tonight.', time: '14:30' },
+        { id: 23, groupId: 10, user: 'Ishaan Malhotra', message: 'Let’s use vibrant colors!', time: '14:45' },
+        { id: 24, groupId: 10, user: 'Divya Balaji', message: 'Meet at the art room tomorrow?', time: '15:00' },
+        { id: 25, groupId: 10, user: 'Arnav Mehra', message: 'I’ll bring the paints.', time: '15:15' },
+      ],
+      fresherResources: [
+        { 
+          id: 1, 
+          title: 'Guide to Campus Life', 
+          content: 'Tips for new students to thrive at SRM', 
+          details: `
+            <h2 className="text-2xl font-bold mb-4">Campus Life at SRM University Potheri</h2>
+            <p className="mb-4">SRM Institute of Science and Technology, Potheri, offers a vibrant campus life with state-of-the-art facilities. Located in Chennai, Tamil Nadu, the 250-acre campus hosts over 20,000 students.</p>
+            <h3 className="text-xl font-semibold mb-2">Key Features</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Accommodation</strong>: On-campus hostels with Wi-Fi, mess, and recreational areas.</li>
+              <li><strong>Clubs & Societies</strong>: Over 50 clubs including Robotics, Music, Drama, and NSS.</li>
+              <li><strong>Sports</strong>: Facilities for cricket, football, basketball, and indoor games.</li>
+              <li><strong>Events</strong>: Annual fests like Aaruush (tech) and Milan (cultural).</li>
+              <li><strong>Academics</strong>: Modern libraries, labs, and research centers.</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">Tips for Freshers</h3>
+            <p>Join clubs early, attend orientation, and use SRM Connect to network!</p>
+          `
+        },
+        { 
+          id: 2, 
+          title: 'Clubs and Societies', 
+          content: 'How to join student organizations', 
+          details: `
+            <h2 className="text-2xl font-bold mb-4">Clubs and Societies at SRM University Potheri</h2>
+            <p className="mb-4">SRM offers a variety of student organizations to enhance your skills and network.</p>
+            <h3 className="text-xl font-semibold mb-2">Popular Clubs</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Tech Clubs</strong>: HackSRM, AI Club, Robotics Society.</li>
+              <li><strong>Cultural Clubs</strong>: Dance Club, Music Club, Theatre Guild.</li>
+              <li><strong>Social Impact</strong>: NSS, NCC, Rotaract Club.</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">How to Join</h3>
+            <p>Attend the Club Fair during orientation, sign up via SRM Connect, or contact club leaders.</p>
+          `
+        },
+        { 
+          id: 3, 
+          title: 'Accessing SRM Library', 
+          content: 'Guide to using SRM’s library resources', 
+          details: `
+            <h2 className="text-2xl font-bold mb-4">Accessing SRM University Library</h2>
+            <p className="mb-4">The SRM Central Library at Kattankulathur is a hub for academic resources, with over 1.5 lakh books, 500+ journals, and digital access to e-books and databases.</p>
+            <h3 className="text-xl font-semibold mb-2">How to Access</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Library Card</strong>: Register at the library counter with your SRM ID.</li>
+              <li><strong>Online Portal</strong>: Access e-books and journals via sp.srmist.edu.in with your student login.</li>
+              <li><strong>Timings</strong>: Open 8 AM to 8 PM (weekdays), 9 AM to 5 PM (weekends).</li>
+              <li><strong>Facilities</strong>: Study rooms, computer labs, and group discussion areas.</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">Tips</h3>
+            <p>Reserve books in advance during exam season and explore IEEE and Springer for research papers.</p>
+          `
+        },
+        { 
+          id: 4, 
+          title: 'Navigating SRM Campus', 
+          content: 'Tips for getting around SRM Potheri', 
+          details: `
+            <h2 className="text-2xl font-bold mb-4">Navigating SRM University Potheri Campus</h2>
+            <p className="mb-4">The 250-acre SRM campus can feel overwhelming. Here’s how to get around.</p>
+            <h3 className="text-xl font-semibold mb-2">Key Locations</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Academic Blocks</strong>: Tech Park (CSE, IT), Main Block (Mech, Civil).</li>
+              <li><strong>Dining</strong>: Food Court, hostel messes, and cafes like Cafe Coffee Day.</li>
+              <li><strong>Transport</strong>: Campus shuttles and AC/non-AC buses to Chennai.</li>
+              <li><strong>Health</strong>: SRM Hospital near the main gate for emergencies.</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">Tips</h3>
+            <p>Download the SRM campus map from the student portal and use SRM Connect to find events.</p>
+          `
+        },
+        { 
+          id: 5, 
+          title: 'Academic Success Tips', 
+          content: 'How to excel in your studies at SRM', 
+          details: `
+            <h2 className="text-2xl font-bold mb-4">Academic Success at SRM University</h2>
+            <p className="mb-4">SRM’s academic environment is rigorous but rewarding. Here’s how to succeed.</p>
+            <h3 className="text-xl font-semibold mb-2">Study Tips</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>Attend Classes</strong>: SRM requires 75% attendance for exams.</li>
+              <li><strong>Use Resources</strong>: Access lecture notes on the student portal (sp.srmist.edu.in).</li>
+              <li><strong>Group Study</strong>: Collaborate with peers in library study rooms.</li>
+              <li><strong>Seek Help</strong>: Contact faculty via email or office hours.</li>
+            </ul>
+            <h3 className="text-xl font-semibold mb-2">Exam Prep</h3>
+            <p>Check exam timetables on the student portal and practice past papers. Join study groups on SRM Connect!</p>
+          `
+        },
+      ],
+    };
+
+    // Main App Component
+    function App() {
+      const [activeTab, setActiveTab] = useState('home');
+      const [selectedInterest, setSelectedInterest] = useState('');
+      const [chatMessages, setChatMessages] = useState(initialData.chats);
+      const [newMessage, setNewMessage] = useState('');
+      const [groups, setGroups] = useState(initialData.groups);
+      const [joinedGroups, setJoinedGroups] = useState([]);
+      const [currentUser, setCurrentUser] = useState(null);
+      const [users, setUsers] = useState([]);
+      const [showSignUp, setShowSignUp] = useState(false);
+      const [showSignIn, setShowSignIn] = useState(false);
+      const [signUpData, setSignUpData] = useState({ username: '', password: '' });
+      const [signInData, setSignInData] = useState({ username: '', password: '' });
+      const [selectedForum, setSelectedForum] = useState(null);
+      const [showEventForm, setShowEventForm] = useState(null);
+      const [showOpportunityForm, setShowOpportunityForm] = useState(null);
+      const [selectedResource, setSelectedResource] = useState(null);
+      const [eventFormData, setEventFormData] = useState({ name: '', email: '', rollNumber: '' });
+      const [opportunityFormData, setOpportunityFormData] = useState({ name: '', email: '', rollNumber: '' });
+      const interestSectionRef = useRef(null);
+
+      // Handle Get Started
+      const handleGetStarted = () => {
+        interestSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      // Handle Choose Your Interest
+      const handleChooseInterest = (interest) => {
+        setSelectedInterest(interest);
+      };
+
+      // Handle Join Group
+      const handleJoinGroup = (groupId) => {
+        if (!currentUser) {
+          alert('Please sign in to join a group!');
+          setShowSignIn(true);
+          return;
+        }
+        if (!joinedGroups.includes(groupId)) {
+          setJoinedGroups([...joinedGroups, groupId]);
+          setGroups(groups.map(group => 
+            group.id === groupId 
+              ? { ...group, members: group.members + 1 }
+              : group
+          ));
+          alert(`Successfully joined ${groups.find(g => g.id === groupId).name}!`);
+          setActiveTab('chat');
+        } else {
+          alert('You are already a member of this group!');
+        }
+      };
+
+      // Handle Send Message
+      const handleSendMessage = (groupId) => {
+        if (!currentUser) {
+          alert('Please sign in to send messages!');
+          setShowSignIn(true);
+          return;
+        }
+        if (newMessage.trim()) {
+          setChatMessages([...chatMessages, {
+            id: chatMessages.length + 1,
+            groupId,
+            user: currentUser.username,
+            message: newMessage,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }]);
+          setNewMessage('');
+        }
+      };
+
+      // Handle Sign Up
+      const handleSignUp = () => {
+        if (signUpData.username && signUpData.password) {
+          const trimmedUsername = signUpData.username.trim();
+          if (users.find(user => user.username.toLowerCase() === trimmedUsername.toLowerCase())) {
+            alert('Username already exists! Try a different one.');
+          } else {
+            setUsers([...users, { username: trimmedUsername, password: signUpData.password }]);
+            setCurrentUser({ username: trimmedUsername });
+            setSignUpData({ username: '', password: '' });
+            setShowSignUp(false);
+            alert('Sign up successful! You are now logged in.');
+          }
+        } else {
+          alert('Please fill in all fields.');
+        }
+      };
+
+      // Handle Sign In
+      const handleSignIn = () => {
+        try {
+          const trimmedUsername = signInData.username.trim();
+          const trimmedPassword = signInData.password.trim();
+          if (!trimmedUsername || !trimmedPassword) {
+            alert('Username and password cannot be empty.');
+            return;
+          }
+          const user = users.find(
+            user => user.username.toLowerCase() === trimmedUsername.toLowerCase() && user.password === trimmedPassword
+          );
+          if (user) {
+            setCurrentUser({ username: user.username });
+            setSignInData({ username: '', password: '' });
+            setShowSignIn(false);
+            alert('Sign in successful!');
+          } else {
+            console.log('Sign-in failed: Invalid credentials', { username: trimmedUsername, users });
+            alert('Invalid username or password. Please check your credentials and try again.');
+          }
+        } catch (error) {
+          console.error('Sign-in error:', error);
+          alert('An error occurred during sign-in. Please try again later.');
+        }
+      };
+
+      // Handle Sign Out
+      const handleSignOut = () => {
+        setCurrentUser(null);
+        setJoinedGroups([]);
+        alert('Signed out successfully.');
+      };
+
+      // Handle Forum Selection
+      const handleForumClick = (post) => {
+        setSelectedForum(post);
+        setActiveTab('forum-details');
+      };
+
+      // Handle Event Registration
+      const handleEventRegister = (event) => {
+        if (!currentUser) {
+          alert('Please sign in to register for events!');
+          setShowSignIn(true);
+          return;
+        }
+        setShowEventForm(event);
+      };
+
+      const handleEventFormSubmit = () => {
+        if (eventFormData.name && eventFormData.email && eventFormData.rollNumber) {
+          alert(`Registration Successful for ${showEventForm.title}! You will receive a confirmation email soon.`);
+          setEventFormData({ name: '', email: '', rollNumber: '' });
+          setShowEventForm(null);
+        } else {
+          alert('Please fill in all fields.');
+        }
+      };
+
+      // Handle Opportunity Application
+      const handleOpportunityApply = (opportunity) => {
+        if (!currentUser) {
+          alert('Please sign in to apply for opportunities!');
+          setShowSignIn(true);
+          return;
+        }
+        setShowOpportunityForm(opportunity);
+      };
+
+      const handleOpportunityFormSubmit = () => {
+        if (opportunityFormData.name && opportunityFormData.email && opportunityFormData.rollNumber) {
+          alert(`Application submitted for ${showOpportunityForm.title}! We will email you the details soon.`);
+          setOpportunityFormData({ name: '', email: '', rollNumber: '' });
+          setShowOpportunityForm(null);
+        } else {
+          alert('Please fill in all fields.');
+        }
+      };
+
+      // Handle Fresher Resource Details
+      const handleResourceClick = (resource) => {
+        setSelectedResource(resource);
+        setActiveTab('resource-details');
+      };
+
+      return (
+        <StrictMode>
+          <div className="min-h-screen bg-gray-50 font-sans">
+            {/* Navbar */}
+            <nav className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 sticky top-0 z-10 shadow-lg">
+              <div className="max-w-7xl mx-auto flex justify-between items-center">
+                <h1 className="text-3xl font-extrabold tracking-tight">SRM CONNECT</h1>
+                <div className="flex items-center space-x-6">
+                  {['home', 'groups', 'forum', 'chat', 'announcements', 'events', 'opportunities', 'freshers'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setActiveTab(tab);
+                        setSelectedForum(null);
+                        setSelectedResource(null);
+                      }}
+                      className={`capitalize text-lg font-medium hover:text-indigo-200 transition duration-200 ${activeTab === tab ? 'border-b-2 border-white' : ''}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                  {currentUser ? (
+                    <div className="flex items-center space-x-4">
+                      <span className="text-lg">Welcome, {currentUser.username}</span>
+                      <button
+                        onClick={handleSignOut}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-x-4">
+                      <button
+                        onClick={() => setShowSignIn(true)}
+                        className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                      >
+                        Sign In
+                      </button>
+                      <button
+                        onClick={() => setShowSignUp(true)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                      >
+                        Sign Up
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </nav>
+
+            {/* Sign Up Modal */}
+            {showSignUp && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Sign Up</h2>
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={signUpData.username}
+                    onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={signUpData.password}
+                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowSignUp(false)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSignUp}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sign In Modal */}
+            {showSignIn && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Sign In</h2>
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={signInData.username}
+                    onChange={(e) => setSignInData({ ...signInData, username: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={signInData.password}
+                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowSignIn(false)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSignIn}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Event Registration Form */}
+            {showEventForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Register for {showEventForm.title}</h2>
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={eventFormData.name}
+                    onChange={(e) => setEventFormData({ ...eventFormData, name: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={eventFormData.email}
+                    onChange={(e) => setEventFormData({ ...eventFormData, email: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Roll Number"
+                    value={eventFormData.rollNumber}
+                    onChange={(e) => setEventFormData({ ...eventFormData, rollNumber: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowEventForm(null)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleEventFormSubmit}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Opportunity Application Form */}
+            {showOpportunityForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Apply for {showOpportunityForm.title}</h2>
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={opportunityFormData.name}
+                    onChange={(e) => setOpportunityFormData({ ...opportunityFormData, name: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={opportunityFormData.email}
+                    onChange={(e) => setOpportunityFormData({ ...opportunityFormData, email: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Roll Number"
+                    value={opportunityFormData.rollNumber}
+                    onChange={(e) => setOpportunityFormData({ ...opportunityFormData, rollNumber: e.target.value })}
+                    className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowOpportunityForm(null)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleOpportunityFormSubmit}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Main Content */}
+            <div className="max-w-7xl mx-auto p-6">
+              {activeTab === 'home' && (
+                <div>
+                  {/* Hero Section */}
+                  <div className="hero-bg text-white py-20 px-6 rounded-xl mb-8 text-center">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">Welcome to SRM CONNECT</h2>
+                    <p className="text-lg md:text-xl mb-6 max-w-2xl mx-auto">Discover communities, connect with peers, and explore opportunities tailored to your passions!</p>
+                    <button 
+                      onClick={handleGetStarted}
+                      className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold transition duration-300"
+                    >
+                      Get Started
+                    </button>
+                  </div>
+
+                  {/* Choose Your Interest */}
+                  <div ref={interestSectionRef} className="mb-12">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Choose Your Interest</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {initialData.interests.map((interest) => (
+                        <button
+                          key={interest}
+                          onClick={() => handleChooseInterest(interest)}
+                          className={`p-4 rounded-lg text-center font-semibold transition duration-300 ${selectedInterest === interest ? 'bg-indigo-500 text-white' : 'bg-white text-gray-800 shadow-md hover:bg-indigo-100 card-hover'}`}
+                        >
+                          {interest}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Suggested Groups */}
+                  {selectedInterest ? (
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-6">Suggested Groups for {selectedInterest}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {groups
+                          .filter((group) => group.interest === selectedInterest)
+                          .map((group) => (
+                            <div key={group.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                              <h4 className="font-bold text-xl text-gray-800">{group.name}</h4>
+                              <p className="text-gray-600 mt-2">{group.description}</p>
+                              <p className="text-sm text-gray-500 mt-2">Members: {group.members}</p>
+                              <button 
+                                onClick={() => handleJoinGroup(group.id)}
+                                className={`mt-4 px-4 py-2 rounded-full font-semibold transition duration-300 ${joinedGroups.includes(group.id) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-indigo-500 hover:bg-indigo-600 text-white'}`}
+                                disabled={joinedGroups.includes(group.id)}
+                              >
+                                {joinedGroups.includes(group.id) ? 'Joined' : 'Join Group'}
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-6">Explore Popular Groups</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {groups.slice(0, 6).map((group) => (
+                          <div key={group.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                            <h4 className="font-bold text-xl text-gray-800">{group.name}</h4>
+                            <p className="text-gray-600 mt-2">{group.description}</p>
+                            <p className="text-sm text-gray-500 mt-2">Members: {group.members}</p>
+                            <button 
+                              onClick={() => handleJoinGroup(group.id)}
+                              className={`mt-4 px-4 py-2 rounded-full font-semibold transition duration-300 ${joinedGroups.includes(group.id) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-indigo-500 hover:bg-indigo-600 text-white'}`}
+                              disabled={joinedGroups.includes(group.id)}
+                            >
+                              {joinedGroups.includes(group.id) ? 'Joined' : 'Join Group'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'groups' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Your Groups</h2>
+                  {joinedGroups.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                      {groups
+                        .filter((group) => joinedGroups.includes(group.id))
+                        .map((group) => (
+                          <div key={group.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                            <h3 className="font-bold text-xl text-gray-800">{group.name}</h3>
+                            <p className="text-gray-600 mt-2">{group.description}</p>
+                            <p className="text-sm text-gray-500 mt-2">Interest: {group.interest}</p>
+                            <p className="text-sm text-gray-500">Members: {group.members}</p>
+                            <button 
+                              onClick={() => setActiveTab('chat')}
+                              className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                            >
+                              Go to Chat
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 mb-12">You haven't joined any groups yet.</p>
+                  )}
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">All Groups</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {groups.map((group) => (
+                      <div key={group.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                        <h3 className="font-bold text-xl text-gray-800">{group.name}</h3>
+                        <p className="text-gray-600 mt-2">{group.description}</p>
+                        <p className="text-sm text-gray-500 mt-2">Interest: {group.interest}</p>
+                        <p className="text-sm text-gray-500">Members: {group.members}</p>
+                        <button 
+                          onClick={() => handleJoinGroup(group.id)}
+                          className={`mt-4 px-4 py-2 rounded-full font-semibold transition duration-300 ${joinedGroups.includes(group.id) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-indigo-500 hover:bg-indigo-600 text-white'}`}
+                          disabled={joinedGroups.includes(group.id)}
+                        >
+                          {joinedGroups.includes(group.id) ? 'Joined' : 'Join Group'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'forum' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Public Forum</h2>
+                  <div className="space-y-6">
+                    {initialData.forumPosts.map((post) => (
+                      <div 
+                        key={post.id} 
+                        className="bg-white p-6 rounded-xl shadow-lg card-hover cursor-pointer"
+                        onClick={() => handleForumClick(post)}
+                      >
+                        <h3 className="font-bold text-xl text-gray-800">{post.title}</h3>
+                        <p className="text-gray-600 mt-2">{post.content.substring(0, 100)}...</p>
+                        <div className="flex justify-between items-center mt-4">
+                          <p className="text-sm text-gray-500">By {post.author} on {post.date}</p>
+                          <p className="text-sm text-indigo-500 font-semibold">{post.comments.length} Comments</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'forum-details' && selectedForum && (
+                <div>
+                  <button
+                    onClick={() => setActiveTab('forum')}
+                    className="mb-6 text-indigo-600 hover:text-indigo-800 font-semibold"
+                  >
+                    ← Back to Forum
+                  </button>
+                  <div className="bg-white p-8 rounded-xl shadow-lg">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-4">{selectedForum.title}</h2>
+                    <p className="text-gray-600 mb-4">{selectedForum.content}</p>
+                    <p className="text-sm text-gray-500 mb-6">By {selectedForum.author} on {selectedForum.date}</p>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Comments</h3>
+                    {selectedForum.comments.length > 0 ? (
+                      selectedForum.comments.map((comment) => (
+                        <div key={comment.id} className="border-t pt-4 mb-4">
+                          <p className="text-gray-600">{comment.content}</p>
+                          <p className="text-sm text-gray-500">By {comment.user} at {comment.time}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-600">No comments yet.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'chat' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Group Chat</h2>
+                  <div className="bg-white p-6 rounded-xl shadow-lg">
+                    {joinedGroups.length > 0 ? (
+                      groups
+                        .filter((group) => joinedGroups.includes(group.id))
+                        .map((group) => (
+                          <div key={group.id} className="mb-8">
+                            <h3 className="font-bold text-xl text-gray-800 mb-4">{group.name}</h3>
+                            <div className="h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg mb-4">
+                              {chatMessages
+                                .filter((chat) => chat.groupId === group.id)
+                                .map((chat) => (
+                                  <div key={chat.id} className="mb-3">
+                                    <span className="font-semibold text-indigo-600">{chat.user}:</span>{' '}
+                                    <span className="text-gray-800">{chat.message}</span>{' '}
+                                    <span className="text-sm text-gray-500">({chat.time})</span>
+                                  </div>
+                                ))}
+                            </div>
+                            <div className="flex">
+                              <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                className="flex-1 p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Type a message..."
+                              />
+                              <button
+                                onClick={() => handleSendMessage(group.id)}
+                                className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-r-lg font-semibold transition duration-300"
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                    ) : (
+                      <p className="text-gray-600 text-center">Join a group to start chatting!</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'announcements' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Announcements</h2>
+                  <div className="space-y-6">
+                    {initialData.announcements.map((announcement) => (
+                      <div key={announcement.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                        <h3 className="font-bold text-xl text-gray-800">{announcement.title}</h3>
+                        <p className="text-gray-600 mt-2">{announcement.content}</p>
+                        <p className="text-sm text-gray-500 mt-2">{announcement.date}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'events' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Events</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {initialData.events.map((event) => (
+                      <div key={event.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                        <h3 className="font-bold text-xl text-gray-800">{event.title}</h3>
+                        <p className="text-gray-600 mt-2">{event.description}</p>
+                        <p className="text-sm text-gray-500 mt-2">Date: {event.date}</p>
+                        <p className="text-sm text-gray-500">Location: {event.location}</p>
+                        <button 
+                          onClick={() => handleEventRegister(event)}
+                          className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                        >
+                          Register
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'opportunities' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Opportunities</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {initialData.opportunities.map((opportunity) => (
+                      <div key={opportunity.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                        <h3 className="font-bold text-xl text-gray-800">{opportunity.title}</h3>
+                        <p className="text-gray-600 mt-2">{opportunity.description}</p>
+                        <p className="text-sm text-gray-500 mt-2">Deadline: {opportunity.deadline}</p>
+                        <button 
+                          onClick={() => handleOpportunityApply(opportunity)}
+                          className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'freshers' && (
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-800 mb-8">Fresher Resources</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {initialData.fresherResources.map((resource) => (
+                      <div key={resource.id} className="bg-white p-6 rounded-xl shadow-lg card-hover">
+                        <h3 className="font-bold text-xl text-gray-800">{resource.title}</h3>
+                        <p className="text-gray-600 mt-2">{resource.content}</p>
+                        <button 
+                          onClick={() => handleResourceClick(resource)}
+                          className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold transition duration-300"
+                        >
+                          Read More
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'resource-details' && selectedResource && (
+                <div>
+                  <button
+                    onClick={() => setActiveTab('freshers')}
+                    className="mb-6 text-indigo-600 hover:text-indigo-800 font-semibold"
+                  >
+                    ← Back to Fresher Resources
+                  </button>
+                  <div className="bg-white p-8 rounded-xl shadow-lg">
+                    <div dangerouslySetInnerHTML={{ __html: selectedResource.details }} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <footer className="bg-gray-800 text-white py-8 mt-12">
+              <div className="max-w-7xl mx-auto px-6 text-center">
+                <p className="text-lg">© 2025 SRM CONNECT. All rights reserved.</p>
+                <p className="mt-2">Connect, Collaborate, Celebrate!</p>
+              </div>
+            </footer>
+          </div>
+        </StrictMode>
+      );
+    }
+
+    // Render the app
+    try {
+      ReactDOM.render(<App />, document.getElementById('root'));
+    } catch (error) {
+      console.error('Error rendering React app:', error);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-message').style.display = 'block';
+      document.getElementById('error-message').innerText = 'Failed to render the app. Check the console for details.';
+    }
+  </script>
+</body>
+</html>
